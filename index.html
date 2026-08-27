@@ -215,8 +215,52 @@
                             <button @click="isPolling ? stopPolling() : startPolling()" 
                                     class="text-xs font-mono px-3 py-1.5 rounded border border-slate-700 hover:bg-slate-900 transition-colors"
                                     x-text="isPolling ? 'Pause Feed' : 'Resume Feed'"></button>
+
+                            <!-- Seq Lookup -->
+                            <div class="flex items-center gap-1.5">
+                                <input type="number" x-model="seqLookupInput"
+                                       placeholder="Jump to seq..."
+                                       class="w-32 bg-slate-950 border border-slate-700 rounded px-2 py-1.5 text-[11px] font-mono text-slate-200 focus:outline-none focus:border-violet-500 placeholder-slate-600"
+                                       @keydown.enter="lookupSeq()">
+                                <button @click="lookupSeq()"
+                                        :disabled="!seqLookupInput"
+                                        class="text-xs font-mono px-3 py-1.5 rounded border border-violet-600 text-violet-400 hover:bg-violet-950 transition-colors disabled:opacity-40">
+                                    🔍 Detect
+                                </button>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Seq Lookup Result Banner -->
+                    <template x-if="seqLookupResult">
+                        <div class="bg-violet-950/40 border-b border-violet-500/30 px-6 py-2.5 flex items-start justify-between gap-4 font-mono text-xs shrink-0">
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-violet-400 font-bold">seq: <span x-text="seqLookupResult.seq"></span></span>
+                                    <template x-if="seqLookupResult.verification === 'verified'">
+                                        <span class="bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded text-[9px] font-semibold">✓ Verified</span>
+                                    </template>
+                                    <template x-if="seqLookupResult.verification === 'failed'">
+                                        <span class="bg-red-950/80 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded text-[9px] font-semibold">✗ Signature Error</span>
+                                    </template>
+                                    <template x-if="seqLookupResult.verification === 'unsigned'">
+                                        <span class="bg-slate-900/80 text-slate-500 border border-slate-800 px-1.5 py-0.5 rounded text-[9px]">~ Unsigned</span>
+                                    </template>
+                                </div>
+                                <div class="text-slate-400"><span class="text-slate-500">from:</span> <span x-text="seqLookupResult.from || '~anonymous'" class="text-slate-300"></span></div>
+                                <div class="text-slate-400"><span class="text-slate-500">room:</span> <span class="text-violet-300" x-text="seqLookupResult._room"></span> &nbsp;·&nbsp; <span class="text-slate-500">time:</span> <span x-text="formatTimestamp(seqLookupResult.ts)"></span></div>
+                                <div class="text-slate-100 mt-1 break-all" x-text="seqLookupResult.text"></div>
+                            </div>
+                            <button @click="seqLookupResult = null; seqLookupInput = ''" class="text-slate-500 hover:text-slate-300 shrink-0 text-lg leading-none">&times;</button>
+                        </div>
+                    </template>
+                    <template x-if="seqLookupError">
+                        <div class="bg-red-950/30 border-b border-red-500/20 px-6 py-2 flex items-center justify-between font-mono text-xs shrink-0">
+                            <span class="text-red-400" x-text="seqLookupError"></span>
+                            <button @click="seqLookupError = null; seqLookupInput = ''" class="text-slate-500 hover:text-slate-300 text-lg leading-none">&times;</button>
+                        </div>
+                    </template>
+
 
                     <!-- Messages Viewport -->
                     <div id="message-viewport" class="flex-1 overflow-y-auto p-6 space-y-4 flex flex-col">
@@ -785,7 +829,10 @@
                 newMessageInput: '',
                 isSending: false,
                 pollController: null,
-                
+                seqLookupInput: '',
+                seqLookupResult: null,
+                seqLookupError: null,
+
                 // Proof variables
                 proofUrl: '',
                 proofCommit: '',
@@ -1357,7 +1404,39 @@
                     }
                 },
 
+                async lookupSeq() {
+                    const seq = parseInt(this.seqLookupInput);
+                    if (!seq || isNaN(seq)) return;
+                    this.seqLookupResult = null;
+                    this.seqLookupError = null;
+
+                    const endpoint = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                        ? ''
+                        : '/api';
+                    const room = this.currentRoom;
+
+                    try {
+                        const url = `${endpoint}/r/${room}?format=json&since=${seq - 1}&n=1`;
+                        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const data = await res.json();
+                        const msgs = data.messages || [];
+                        const found = msgs.find(m => m.seq === seq);
+                        if (!found) {
+                            this.seqLookupError = `seq ${seq} not found in room #${room}. It may be outside the fetch window or does not exist.`;
+                            return;
+                        }
+                        const verified = await this.verifyMessageSignature(found, room);
+                        found.verification = verified ? 'verified' : (found.sig ? 'failed' : 'unsigned');
+                        found._room = room;
+                        this.seqLookupResult = found;
+                    } catch(e) {
+                        this.seqLookupError = `Lookup failed: ${e.message}`;
+                    }
+                },
+
                 joinCustomRoom() {
+
                     const formatted = this.customRoomInput.toLowerCase().trim().replace(/[^a-z0-9_-]/g, '');
                     if (!formatted) return;
                     
