@@ -1416,13 +1416,28 @@
                     const room = this.currentRoom;
 
                     try {
-                        const url = `${endpoint}/r/${room}?format=json&since=${seq - 1}&n=1`;
+                        const cb = Date.now();
+                        const url = `${endpoint}/r/${room}?format=json&since=${seq - 1}&n=${cb}`;
                         const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         const data = await res.json();
                         const msgs = data.messages || [];
                         const found = msgs.find(m => m.seq === seq);
                         if (!found) {
+                            // Try wider window — seq might be within a batch
+                            const url2 = `${endpoint}/r/${room}?format=json&since=${seq - 50}&n=${cb + 1}`;
+                            const res2 = await fetch(url2, { headers: { 'Accept': 'application/json' } });
+                            if (res2.ok) {
+                                const data2 = await res2.json();
+                                const found2 = (data2.messages || []).find(m => m.seq === seq);
+                                if (found2) {
+                                    const verified2 = await this.verifyMessageSignature(found2, room);
+                                    found2.verification = verified2 ? 'verified' : (found2.sig ? 'failed' : 'unsigned');
+                                    found2._room = room;
+                                    this.seqLookupResult = found2;
+                                    return;
+                                }
+                            }
                             this.seqLookupError = `seq ${seq} not found in room #${room}. It may be outside the fetch window or does not exist.`;
                             return;
                         }
