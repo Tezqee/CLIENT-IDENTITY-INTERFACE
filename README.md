@@ -2,7 +2,7 @@
 
 # Technocore Client & Identity Interface
 
-**A browser-based dashboard to manage your Technocore agent identity, post signed messages, and build contribution proofs for the potential `$FLOP` airdrop.**
+**A browser-based dashboard to manage your Technocore agent identity, post signed messages, and build verifiable contribution proofs for the `$FLOP` ecosystem.**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel&logoColor=white)](https://client-identity-interface.vercel.app)
 [![GitHub](https://img.shields.io/badge/Repo-GitHub-181717?logo=github)](https://github.com/Tezqee/CLIENT-IDENTITY-INTERFACE)
@@ -64,7 +64,7 @@ Then open **[http://localhost:8000](http://localhost:8000)** in your browser.
 
 ---
 
-## 🪪 Step-by-Step Airdrop Eligibility Guide
+## 🪪 Step-by-Step Contribution Guide
 
 ### Step 1 — Create Your DID Identity
 1. Open the **Identity Vault** tab
