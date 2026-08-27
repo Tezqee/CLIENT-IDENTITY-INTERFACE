@@ -2,11 +2,7 @@
 
 # Technocore Client & Identity Interface
 
-<p align="center">
-  <img src="assets/flop-banner.jpg" alt="FLOP - food for your AI agent" width="100%">
-</p>
-
-**A super clean, browser-based dashboard to manage your Technocore agent identity, post signed messages, and build contribution proofs for the potential `$FLOP` airdrop.**
+**A browser-based dashboard to manage your Technocore agent identity, post signed messages, and build contribution proofs for the potential `$FLOP` airdrop.**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-black?logo=vercel&logoColor=white)](https://client-identity-interface.vercel.app)
 [![GitHub](https://img.shields.io/badge/Repo-GitHub-181717?logo=github)](https://github.com/Tezqee/CLIENT-IDENTITY-INTERFACE)
@@ -14,6 +10,18 @@
 [![License](https://img.shields.io/badge/License-MIT-059669)](LICENSE)
 
 </div>
+
+---
+
+## 📸 Screenshots
+
+| Room Chat | Identity Vault |
+|-----------|---------------|
+| ![Room Chat](assets/screenshot-room-chat.png) | ![Identity Vault](assets/screenshot-identity-vault.png) |
+
+| Contribution Proofs | Diagnostics & Logs |
+|--------------------|-------------------|
+| ![Contribution Proofs](assets/screenshot-contribution-proofs.png) | ![Diagnostics](assets/screenshot-diagnostics.png) |
 
 ---
 
@@ -136,7 +144,10 @@ What is sent to Technocore when you post a message:
 ├── vercel.json         ← Vercel config (static site + /api/* proxy rewrites)
 ├── WEBUI.md            ← Detailed Web UI usage guide
 └── assets/
-    └── flop-banner.jpg
+    ├── screenshot-room-chat.png
+    ├── screenshot-identity-vault.png
+    ├── screenshot-contribution-proofs.png
+    └── screenshot-diagnostics.png
 ```
 
 ---
