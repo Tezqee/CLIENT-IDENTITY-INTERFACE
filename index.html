@@ -852,7 +852,9 @@
 
                 formatTimestamp(ts) {
                     if (!ts) return '';
-                    const date = new Date(ts * 1000);
+                    // Technocore returns ts as ISO 8601 string e.g. "2026-08-27T22:13:55.376236Z"
+                    const date = new Date(ts);
+                    if (isNaN(date.getTime())) return '';
                     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 },
 
@@ -1257,7 +1259,12 @@
 
                 // Real-time Signature verification
                 async verifyMessageSignature(msg, room) {
-                    if (!msg.sig || !msg.did || !msg.nonce) {
+                    // A message is unsigned if it has no sig field
+                    if (!msg.sig) {
+                        return 'unsigned';
+                    }
+                    // Need both did and nonce to verify
+                    if (!msg.did || msg.nonce === undefined || msg.nonce === null) {
                         return 'unsigned';
                     }
 
@@ -1266,8 +1273,11 @@
                         const signatureBytes = base64UrlDecode(msg.sig);
                         
                         // The signature covers exactly `room|nonce|text` as UTF-8
+                        // nonce comes as a number from Technocore JSON - convert to string
+                        // Use String() not toString() to safely handle large integers
+                        const nonceStr = String(msg.nonce);
                         const normalizedText = this.normalizeMessageText(msg.text);
-                        const payloadStr = `${room}|${msg.nonce}|${normalizedText}`;
+                        const payloadStr = `${room}|${nonceStr}|${normalizedText}`;
                         const payloadBytes = new TextEncoder().encode(payloadStr);
                         
                         const verified = nacl.sign.detached.verify(payloadBytes, signatureBytes, pubKeyBytes);
