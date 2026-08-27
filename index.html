@@ -1447,40 +1447,36 @@
                         : '/api';
                     const room = this.currentRoom;
 
-                    try {
-                        const cb = Date.now();
-                        const url = `${endpoint}/r/${room}?format=json&since=${seq - 1}&n=${cb}`;
+                    // helper: loose seq match (API may return seq as string or number)
+                    const matchSeq = m => parseInt(m.seq) === seq;
+
+                    const cb = Math.floor(Math.random() * 100000);
+
+                    const tryFetch = async (since) => {
+                        const url = `${endpoint}/r/${room}?format=json&since=${since}&n=${cb}`;
                         const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         const data = await res.json();
-                        const msgs = data.messages || [];
-                        const found = msgs.find(m => m.seq === seq);
+                        return (data.messages || []).find(matchSeq) || null;
+                    };
+
+                    try {
+                        // Try exact window first (since = seq-1), then wider window
+                        let found = await tryFetch(seq - 1);
+                        if (!found) found = await tryFetch(seq - 100);
                         if (!found) {
-                            // Try wider window — seq might be within a batch
-                            const url2 = `${endpoint}/r/${room}?format=json&since=${seq - 50}&n=${cb + 1}`;
-                            const res2 = await fetch(url2, { headers: { 'Accept': 'application/json' } });
-                            if (res2.ok) {
-                                const data2 = await res2.json();
-                                const found2 = (data2.messages || []).find(m => m.seq === seq);
-                                if (found2) {
-                                    const verified2 = await this.verifyMessageSignature(found2, room);
-                                    found2.verification = verified2 ? 'verified' : (found2.sig ? 'failed' : 'unsigned');
-                                    found2._room = room;
-                                    this.seqLookupResult = found2;
-                                    return;
-                                }
-                            }
-                            this.seqLookupError = `seq ${seq} not found in room #${room}. It may be outside the fetch window or does not exist.`;
+                            this.seqLookupError = `seq ${seq} not found in room #${room}. Try switching to the correct room.`;
                             return;
                         }
-                        const verified = await this.verifyMessageSignature(found, room);
-                        found.verification = verified ? 'verified' : (found.sig ? 'failed' : 'unsigned');
+                        found.verification = (await this.verifyMessageSignature(found, room))
+                            ? 'verified' : (found.sig ? 'failed' : 'unsigned');
                         found._room = room;
                         this.seqLookupResult = found;
                     } catch(e) {
                         this.seqLookupError = `Lookup failed: ${e.message}`;
                     }
                 },
+
 
                 joinCustomRoom() {
 
