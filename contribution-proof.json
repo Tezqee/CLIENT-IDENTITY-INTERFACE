@@ -1,0 +1,7 @@
+{
+  "schema": "technocore-contribution-proof-v1",
+  "did": "did:key:z6MkrQwxhQH2kowiCxudRntfrdJHCFPMh5Q7QNBMMH7yWN3V",
+  "artifact_url": "https://github.com/Tezqee/CLIENT-IDENTITY-INTERFACE",
+  "commit": "63f84a1a48fda89f705ec0f54213944daab6dc34",
+  "signature": "8zkSqWEhVXLpRR53V94FhjJnRStBH6KYaU0odqWAcQWK5cz3SDsmWuyP0urCIpfPT0XHc63rsg7an4mqQ3zLDw"
+}
