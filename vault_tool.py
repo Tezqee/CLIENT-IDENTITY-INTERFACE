@@ -54,13 +54,21 @@ def encrypt_vault(raw_private_bytes, passphrase, did):
         "did": did,
         "salt": salt.hex(),
         "iv": iv.hex(),
-        "ciphertext": base64.b64encode(ciphertext_with_tag).decode('utf-8')
+        # Use base64URL (no padding) to match Web UI format
+        "ciphertext": base64.urlsafe_b64encode(ciphertext_with_tag).decode('utf-8').rstrip('=')
     }
 
 def decrypt_vault(vault_data, passphrase):
     salt = bytes.fromhex(vault_data["salt"])
     iv = bytes.fromhex(vault_data["iv"])
-    ciphertext_with_tag = base64.b64decode(vault_data["ciphertext"])
+    # Support both standard base64 and base64URL (with or without padding)
+    ciphertext_str = vault_data["ciphertext"]
+    # Add padding if missing
+    padding = 4 - len(ciphertext_str) % 4
+    if padding != 4:
+        ciphertext_str += '=' * padding
+    # Handle both base64URL (-_) and standard base64 (+/)
+    ciphertext_with_tag = base64.urlsafe_b64decode(ciphertext_str)
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,

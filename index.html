@@ -1028,8 +1028,8 @@
                         throw new Error("Web Crypto GCM requires a secure context (HTTPS or localhost). Please run server.py.");
                     }
                     const textEncoder = new TextEncoder();
-                    const salt = base58Decode(vaultObj.salt); // Using base58Decode as robust hex decoder since hex is base58btc subset or manual hex parser. Wait, base58Decode isn't hex. Let's write a hex parser.
-                    // Wait, let's parse hex safely:
+
+                    // Parse hex string to Uint8Array
                     const parseHex = (hex) => {
                         const bytes = [];
                         for (let i = 0; i < hex.length; i += 2) {
@@ -1037,11 +1037,23 @@
                         }
                         return new Uint8Array(bytes);
                     };
-                    
+
+                    // Decode ciphertext — supports both standard base64 (+/) and base64URL (-_), with or without padding
+                    const decodeBase64Any = (str) => {
+                        let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+                        while (b64.length % 4 !== 0) b64 += '=';
+                        const binary = atob(b64);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) {
+                            bytes[i] = binary.charCodeAt(i);
+                        }
+                        return bytes;
+                    };
+
                     const saltBytes = parseHex(vaultObj.salt);
                     const ivBytes = parseHex(vaultObj.iv);
-                    const encryptedBytes = base64UrlDecode(vaultObj.ciphertext);
-                    
+                    const encryptedBytes = decodeBase64Any(vaultObj.ciphertext);
+
                     const baseKey = await window.crypto.subtle.importKey(
                         "raw",
                         textEncoder.encode(passphrase),
@@ -1049,7 +1061,7 @@
                         false,
                         ["deriveKey"]
                     );
-                    
+
                     const aesKey = await window.crypto.subtle.deriveKey(
                         {
                             name: "PBKDF2",
@@ -1062,13 +1074,13 @@
                         false,
                         ["decrypt"]
                     );
-                    
+
                     const decryptedBuffer = await window.crypto.subtle.decrypt(
                         { name: "AES-GCM", iv: ivBytes },
                         aesKey,
                         encryptedBytes
                     );
-                    
+
                     return new Uint8Array(decryptedBuffer);
                 },
 
