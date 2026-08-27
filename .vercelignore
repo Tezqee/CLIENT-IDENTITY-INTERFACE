@@ -1,0 +1,8 @@
+# Exclude Python CLI and local server files from Vercel deployment
+server.py
+vault_tool.py
+technocore_agent.py
+requirements.txt
+.venv/
+*.pem
+agent-vault.json
